@@ -1,0 +1,13 @@
+xule@dirac:~/local_wspace/mc_mcpsc$ ./bench_time.sh
+CMD=./mcpsc /home/xule/local_wspace/mc_mcpsc/tmp/
+/home/xule/workspace_git/data/pdb_chew_kedem/
+//home/xule/workspace_git/data/contact_maps_chew_kedem/
+426 83311 77275
+426 44672 80232
+425 35596 85394
+425 31841 141305
+425 26463 84116
+425 28788 85148
+446 25530 85648
+448 24780 82129
+

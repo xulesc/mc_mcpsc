@@ -1,0 +1,17 @@
+mcpsc_noc README file
+=====================
+
+The project provides a multi-threaded implementation of
+three protein structure comparison methods combined to perform
+multi-criteria protein structure comparison on a multi-core CPU.
+
+This README file provides basic details on building the project.
+
+Building all-to-all MCPSC
+=========================
+
+To build the mcpsc the following case is currently supported - 
+
+* Build: make test
+* Run: time ./mcpsc /[full_path_to_a_temp_dir]/ /[full_path_to_pdb]/ /[full_path_to_contact_maps]/
+
