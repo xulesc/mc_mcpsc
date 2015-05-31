@@ -22,19 +22,6 @@ typedef struct {
 	int protein1_idx, protein2_idx;
 } job_descriptor;
 
-class SortData {
-public:
-	SortData(int i, int p) {
-		product = p;
-		index = i;
-	}	
-	int product;
-	int index;
-	bool operator<(const SortData &rhs) const { 
-		return product > rhs.product;  // descending
-	}	
-};
-
 int *job_indexes;
 job_descriptor *job_pool;
 
@@ -94,37 +81,6 @@ int get_min_index(int size, int *data) {
 	return lowest;
 }
 
-/*void get_partitions(int split_size, int algo_type, int job_count, bool sort, std::vector<SortData> &data) {
-	//int part_sum[split_size];
-	// init all sums
-	//for(int i = 0; i < split_size; i++) {
-	//	part_sum[i] = 0;
-	//}
-	// put job index and length product in vector
-	//std::vector<SortData> data;
-	for(int i = 0; i < job_count; i++) {
-		if(job_pool[i].algo_type == algo_type) {
-			int product;
-			if(algo_type == CE_ALGO_TYPE) {
-				product = job_pool[i].protein1->nSe * job_pool[i].protein2->nSe;
-			} else {
-				product = seq_length[job_pool[i].protein1_idx] * seq_length[job_pool[i].protein2_idx];
-			}
-			data.push_back(SortData(i, product));
-		}
-	}
-	// sort vector (reverse)
-	if(sort)
-		std::sort(data.begin(), data.end());
-	// greedy partition
-	//std::vector<int> partitions[split_size];
-	//for(auto datum : data) {
-	//	int index = get_min_index(split_size, part_sum);
-	//	partitions[index].push_back(datum.index);
-	//	part_sum[index] += datum.product;
-	//}
-	//return data;
-}*/
 
 void dispatch(int ue_count, int job_index) {
 	while(1) {
@@ -151,35 +107,6 @@ void do_usm(char *pdb_cm_name) {
 	ftime(&otp2);
 	cout << "USM Total time (msec): " << diff_timeb(otp1, otp2) << endl;
 }
-
-/*void reset_jobs_sorted(int ue_count, int jcount, int *job_indexes) {
-//	for(int i = 0; i < jcount; i++)
-//		cout << "index: " << i << ", job_index: " << job_indexes[i] << endl;
-	cout << "sorting tasks per algo" << endl;
-	// create greedy partitions for CE & TMalign jobs
-	std::vector<SortData> sorted_ce_jobs;
-	get_partitions(ue_count - 1, CE_ALGO_TYPE, jcount, 1, sorted_ce_jobs);
-	std::vector<SortData> sorted_tm_jobs;
-	get_partitions(ue_count - 1, TMALIGN_ALGO_TYPE, jcount, 1, sorted_tm_jobs);
-	// make job list
-	int index = 0;
-	for(auto datum : sorted_ce_jobs)
-		job_indexes[index++] = datum.index;
-	for(auto datum : sorted_tm_jobs)
-		job_indexes[index++] = datum.index;	
-//	for(int i = 0; i < jcount; i++)
-//		cout << "index: " << i << ", job_index: " << job_indexes[i] << endl;
-	cout << "jobs set" << endl;
-}
-
-// returns 1 when is and 0 if not
-int isQuery(char *name, std::set<std::string> lines) {
-	string n = name;
-	for(auto line : lines)
-		if(n.find(line) == 0)	
-			return 1;
-	return 0;
-}*/
 
 int main(int argc, char **argv) {
 	struct timeb tp1, tp2;
