@@ -6,6 +6,8 @@
 #include <sys/timeb.h>
 #include <stdio.h>
 #include <omp.h>
+#define _GNU_SOURCE
+#include <stdlib.h>
 
 //
 #define CE_ALGO_TYPE 1
@@ -38,6 +40,10 @@ int get_file_count(char *dir_name);
 void ce_load_data(CE *ce, char *db_tmp_path, char *pdb_dir_name, int file_count,
 		char **filenames, protein_data *proteins_data);
 void read_params(char *db_tmp_path, char *pdb_dir_name, char **argv);
+int get_file_count2(char *dom_files);
+void fill_filenames(int file_count1, char **filenames1, char *dom_files);
+int get_job_count(char *pair_indices);
+void load_job_pairs(int job_pairs[][2], char *pair_indices);
 
 MasterToClientTransferBlock client_in_data;
 ClientToMasterTransferBlock master_in_data;
@@ -90,20 +96,21 @@ void dispatch(int ue_count, int job_index) {
 	}
 }
 
-void do_usm(char *pdb_cm_name) {
+void do_usm(char *pdb_cm_name, char *cm_files, int jcount, int jobs[][2]) {
 	struct timeb tp1, tp2, otp1, otp2;
 	// do usm and wrap up
-	int cm_file_count = get_file_count(pdb_cm_name);
+	int cm_file_count = get_file_count2(cm_files);
 	char *cm_filenames[cm_file_count];
-	fill_dataset_details(pdb_cm_name, cm_filenames);
-        ftime(&tp1);
+	fill_filenames(cm_file_count, cm_filenames, cm_files);
+    ftime(&tp1);
 	USM usm;
-        usm.load_data(cm_file_count, pdb_cm_name, cm_filenames);
+    usm.load_data(cm_file_count, pdb_cm_name, cm_filenames);
 	ftime(&tp2);
-        cout << "USM data load time: " << diff_timeb(tp1, tp2) << endl;
+    cout << "USM data load time: " << diff_timeb(tp1, tp2) << endl;
 
 	ftime(&otp1);
-	usm.calculate_pairwise_distances();
+	// usm.calculate_pairwise_distances();
+	usm.calculate_pairwise_distance(jcount, jobs, cm_filenames);
 	ftime(&otp2);
 	cout << "USM Total time (msec): " << diff_timeb(otp1, otp2) << endl;
 }
@@ -112,17 +119,27 @@ int main(int argc, char **argv) {
 	struct timeb tp1, tp2;
 	struct timeb otp1, otp2;
 	// read params
-	char *db_tmp_path, *pdb_dir_name, *pdb_cm_name;
+	char *db_tmp_path, *pdb_dir_name, *pdb_cm_name, *dom_files, 
+		*pair_indices, *cm_files;
 	printf("reading params\n");
 	//read_params(db_tmp_path, pdb_dir_name, argv);
 	setText(&db_tmp_path, argv[1]);
 	setText(&pdb_dir_name, argv[2]);
 	setText(&pdb_cm_name, argv[3]);
+	setText(&dom_files, argv[4]);
+	setText(&pair_indices, argv[5]);
+	setText(&cm_files, argv[6]);
 	printf("db_tmp_path: %s\n", db_tmp_path);
 
-	// get file count
-	int file_count = get_file_count(pdb_dir_name);
+	// get file count, filenames and load pairs for ce, tmalign
+	int file_count = get_file_count2(dom_files);
 	char *filenames[file_count];
+	fill_filenames(file_count, filenames, dom_files);
+	int jcount = get_job_count(pair_indices);
+	int jobs[jcount][2];
+	load_job_pairs(jobs, pair_indices);
+
+	// get file count
 	protein_data proteins_data[file_count];
 
 	CE ce;
@@ -143,23 +160,15 @@ int main(int argc, char **argv) {
 
 #ifndef ONLY_CE
 #ifndef ONLY_TMALIGN
-	do_usm(pdb_cm_name);
+	do_usm(pdb_cm_name, cm_files, jcount, jobs);
 #endif
 #endif
 
 	int nthreads, tid, counter, chunk = 1;
-	int jobs[file_count * file_count][2];
-	int jcount = 0;
 #ifndef ONLY_CE
 #ifndef ONLY_USM
 	// do TMalign
 	ftime(&otp1);
-	for(int i = 0; i < file_count; i++) {
-		for (int j = 0; j < file_count; j++) {
-			jobs[jcount][0] = i;
-			jobs[jcount++][1] = j;
-		}
-	}
 	printf("jcount: %d\n",jcount);		
 
 #pragma omp parallel shared(jobs,amino_acid_chain_seq,atom_index,seq_amino_acids,seq_coords,jcount,nthreads,chunk) private(counter, tid) 
@@ -238,17 +247,7 @@ int main(int argc, char **argv) {
 #ifndef ONLY_TMALIGN
 #ifndef ONLY_USM
 	// do CE
-	//int nthreads, tid, counter, chunk = 1;
 	ftime(&otp1);
-	//int jobs[file_count * file_count][2];
-	//int jcount = 0;
-	jcount = 0;
-	for(int i = 0; i < file_count; i++) {
-		for (int j = 0; j < file_count; j++) {
-			jobs[jcount][0] = i;
-			jobs[jcount++][1] = j;
-		}
-	}
 	printf("jcount: %d\n",jcount);		
 
 #pragma omp parallel shared(jobs,proteins_data,jcount,nthreads,chunk) private(counter, tid) 
@@ -538,7 +537,7 @@ void read_params(char *db_tmp_path, char *pdb_dir_name, char **argv) {
 void ce_load_data(CE *ce, char *db_tmp_path, char *pdb_dir_name, int file_count,
 		char **filenames, protein_data *proteins_data) {
 	// load data
-	ce->fill_dataset_details(pdb_dir_name, filenames);
+	//ce->fill_dataset_details(pdb_dir_name, filenames);
 	ce->parse_dataset_files_make_entries(pdb_dir_name, filenames, file_count,
 			db_tmp_path, proteins_data);
 }
@@ -641,5 +640,50 @@ int tmalign_read_pdb_structure(char *fname, float *prot_backbone, char *ss,
 	fclose(file);
 
 	return --index;
+}
+////////
+int get_file_count2(char *dom_files) {
+	FILE *file = fopen(dom_files, "r");
+	int i;
+	fscanf (file, "%d", &i);
+	fclose(file);
+	return i;
+}
+void fill_filenames(int file_count1, char **filenames1, char *dom_files) {
+	FILE *file = fopen(dom_files, "r");
+	size_t len = 0;
+	ssize_t read;
+	char * line = NULL;
+	int lcount = 0;
+	while ((read = getline(&line, &len, file)) != -1) {
+            line[read - 1] = '\0';
+			--read;
+			if (lcount++ == 0) continue;
+			char *domname;
+			setText(&domname, line);
+			filenames1[lcount - 2] = domname;
+	}
+	fclose(file);
+}
+int get_job_count(char *pair_indices) {
+	FILE *file = fopen(pair_indices, "r");
+	int i;
+	fscanf (file, "%d", &i);
+	fclose(file);
+	return i;
+}
+void load_job_pairs(int job_pairs[][2], char *pair_indices) {
+	FILE *file = fopen(pair_indices, "r");
+	int i, count, n1, n2;
+	char line[80];
+	fgets(line, 80, file);
+	sscanf(line, "%d", &count);
+	for(i = 0; i < count; i++) {
+		fgets(line, 80, file);
+		sscanf(line, "%d %d", &n1, &n2);
+		job_pairs[i][0] = n1;
+		job_pairs[i][1] = n2;
+	}
+	fclose(file);
 }
 ////////
