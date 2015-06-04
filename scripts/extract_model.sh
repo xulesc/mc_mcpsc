@@ -27,7 +27,7 @@ make_contact_map()
 
 
 ##############
-#extract_model $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
+# extract_model $HOME/Downloads/pdb40d_full_dom $HOME/Downloads/pdb40d
 make_contact_map $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
 
                                          
