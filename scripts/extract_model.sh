@@ -9,6 +9,17 @@ extract_model()
 	done
 }
 
+make_contact_map()
+{
+	echo "making contact maps"
+	mkdir $2
+	for f in `ls $1`; do
+		java -cp ./ BuildContactMapFromPDB $1/$f $ANGS $BOOL
+	done
+	mv $1/*.cm $2
+}
+                                                        
+
 
 ##############
 extract_model $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
