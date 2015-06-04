@@ -9,8 +9,8 @@ from os.path import expanduser
 from Bio import PDB
 
 USER_HOME = expanduser("~")
-#INFILE = "%s/Downloads/pdb40d_j.fa" %USER_HOME
-INFILE = "%s/Downloads/pdb40d_test" %USER_HOME
+INFILE = "%s/Downloads/pdb40d_j.fa" %USER_HOME
+#INFILE = "%s/Downloads/pdb40d_test" %USER_HOME
 OUTDIR = "%s/Downloads/pdb40d/" %USER_HOME
 
 

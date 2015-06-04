@@ -1,5 +1,10 @@
 #!/bin/sh
 
+## Contact Map Parameters
+ANGS='6.5'                      ## as specified in the paper
+BOOL='false'
+##
+
 extract_model()
 {
 	echo "extracting models"
@@ -22,6 +27,7 @@ make_contact_map()
 
 
 ##############
-extract_model $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
+#extract_model $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
+make_contact_map $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
 
                                          
