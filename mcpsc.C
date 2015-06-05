@@ -142,22 +142,6 @@ int main(int argc, char **argv) {
 	// get file count
 	protein_data proteins_data[file_count];
 
-	CE ce;
-	printf("loading CE data\n");
-	// load CE data and fill filename as side-effect
-	ftime(&tp1);
-	ce_load_data(&ce, db_tmp_path, pdb_dir_name, file_count, filenames,
-			proteins_data);
-	ftime(&tp2);
-	cout << "CE data load time: " << diff_timeb(tp1, tp2) << endl;
-
-	printf("loading TMalign data\n");
-	ftime(&tp1);
-	tmalign_load_data(file_count, filenames, pdb_dir_name);
-	ftime(&tp2);
-	cout << "TMalign data load time: " << diff_timeb(tp1, tp2) << endl;
-	backbone_ backbone_1;
-
 #ifndef ONLY_CE
 #ifndef ONLY_TMALIGN
 	do_usm(pdb_cm_name, cm_files, jcount, jobs);
@@ -167,6 +151,12 @@ int main(int argc, char **argv) {
 	int nthreads, tid, counter, chunk = 1;
 #ifndef ONLY_CE
 #ifndef ONLY_USM
+	printf("loading TMalign data\n");
+	ftime(&tp1);
+	tmalign_load_data(file_count, filenames, pdb_dir_name);
+	ftime(&tp2);
+	cout << "TMalign data load time: " << diff_timeb(tp1, tp2) << endl;
+	backbone_ backbone_1;
 	// do TMalign
 	ftime(&otp1);
 	printf("jcount: %d\n",jcount);		
@@ -246,6 +236,15 @@ int main(int argc, char **argv) {
 
 #ifndef ONLY_TMALIGN
 #ifndef ONLY_USM
+	CE ce;
+	printf("loading CE data\n");
+	// load CE data and fill filename as side-effect
+	ftime(&tp1);
+	ce_load_data(&ce, db_tmp_path, pdb_dir_name, file_count, filenames,
+			proteins_data);
+	ftime(&tp2);
+	cout << "CE data load time: " << diff_timeb(tp1, tp2) << endl;
+
 	// do CE
 	ftime(&otp1);
 	printf("jcount: %d\n",jcount);		
