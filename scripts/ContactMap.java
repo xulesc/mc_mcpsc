@@ -258,7 +258,7 @@ where resAi, resBi are numbers.
 		found = false;
 		// read protein size in residues number
 		System.out.println("Reading pdb Model in"+fileName+" :");
-		/*while(!found)
+		while(!found)
 		    {
 
 			fileLine = bufferedReader.readLine();
@@ -266,7 +266,7 @@ where resAi, resBi are numbers.
 			found = fileLine.indexOf("MOLECULE")!=-1;
 			
 		    }
-		*/
+		
 		/* here we know we reach the juici part of the file */
 		found = false;
 		while((!found)&&(bufferedReader.ready())&&(numberCAs < MAXCAATOMS))

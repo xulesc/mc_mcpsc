@@ -1,0 +1,7 @@
+*.class
+*~
+cm_list
+dom_list
+job_pairs
+tmp/
+
