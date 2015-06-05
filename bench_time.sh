@@ -14,12 +14,14 @@ CM_FILES="$HOME/workspace_git/data/test_cm_files"
 LOG="log"
 CMD="./$PRG $TMP $PDB_DIR $CMP_DIR $DOM_FILES $JOB_PAIRS $CM_FILES"
 
-echo "#CMD=$CMD"
-$CMD
+#echo "#CMD=$CMD"
+#$CMD
 #for N in `seq 1 8`; do
 #    export OMP_NUM_THREADS=$N; $CMD > $LOG.$N
 #    grep 'Total time (msec)' $LOG.$N | awk '{print $NF}' | python -c 'import sys;nc=sys.argv[1];(usm,tm,ce,ignore)=sys.stdin.read().split("\n"); print "%s %s %s %s %d" %(nc,usm,tm,ce,(int(usm)+int(tm)+int(ce)))' $N
 #done
+./$PRG /home/anuj/workspace/mc_mcpsc/tmp/ /home/anuj/Downloads/pdb40d/ /home/anuj/Downloads/contact_maps_pdb40d/ ./test_dom_files ./test_jobs ./test_cm_files > pdb40d.psc.log
+
 
     
     

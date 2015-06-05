@@ -148,6 +148,7 @@ int main(int argc, char **argv) {
 #endif
 #endif
 
+
 	int nthreads, tid, counter, chunk = 1;
 #ifndef ONLY_CE
 #ifndef ONLY_USM
@@ -156,7 +157,7 @@ int main(int argc, char **argv) {
 	tmalign_load_data(file_count, filenames, pdb_dir_name);
 	ftime(&tp2);
 	cout << "TMalign data load time: " << diff_timeb(tp1, tp2) << endl;
-	backbone_ backbone_1;
+	//backbone_ backbone_1;
 	// do TMalign
 	ftime(&otp1);
 	printf("jcount: %d\n",jcount);		
@@ -224,7 +225,7 @@ int main(int argc, char **argv) {
 					"id: %d, sec_job_start: %ld, sec_result_send: %ld, "
 					"processing_time_msec: %ld, data_collect_time_msec: %ld, "
 					"idle_time_msec: %ld\n", TMALIGN_ALGO_TYPE,
-					proteins_data[i].name, proteins_data[j].name, seq_length[i],
+					filenames[i], filenames[j], seq_length[i],
 					seq_length[j], ldata.rmsd, ldata.tm1, ldata.tm2, tid,
 					tp1.time, tp2.time, diff_timeb(tp1, tp2), 0, 0);
 	}
@@ -556,6 +557,7 @@ void tmalign_load_data(int line_count, char **filenames, char *dir_name) {
 	// read files
 	char str[256];
 	for (i = 0; i < line_count; i++) {
+		//printf("%s\n",filenames[i]);
 		strcpy(str, dir_name);
 		strcat(str, filenames[i]);
 		seq_length[i] = tmalign_read_pdb_structure(str,
