@@ -22,7 +22,8 @@ CMD="./$PRG $TMP $PDB_DIR $CMP_DIR $DOM_FILES $JOB_PAIRS $CM_FILES"
 #done
 #./$PRG /home/anuj/workspace/mc_mcpsc/tmp/ /home/anuj/Downloads/pdb40d/ /home/anuj/Downloads/contact_maps_pdb40d/ ./test_dom_files ./test_jobs ./test_cm_files > pdb40d.psc.log
 #export OMP_NUM_THREADS=1
-./$PRG /home/anuj/workspace/mc_mcpsc/tmp/ /home/anuj/Downloads/pdb40d/ /home/anuj/Downloads/contact_maps_pdb40d/ ./dom_list ./job_pairs ./cm_list > pdb40d.psc.log
+#./$PRG /home/anuj/workspace/mc_mcpsc/tmp/ /home/anuj/Downloads/pdb40d/ /home/anuj/Downloads/contact_maps_pdb40d/ ./dom_list ./job_pairs ./cm_list > pdb40d.psc.log
+./$PRG /home/anuj/workspace/mc_mcpsc/tmp/ /home/anuj/Downloads/astral_40p/ /home/anuj/Downloads/contact_maps_astral_40p/ ./dom_list1 ./job_pairs1 ./cm_list1 > pdb40d.psc.log.1
 
 
     

@@ -28,6 +28,8 @@ make_contact_map()
 
 ##############
 # extract_model $HOME/Downloads/pdb40d_full_dom $HOME/Downloads/pdb40d
-make_contact_map $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
+#make_contact_map $HOME/Downloads/pdb40d $HOME/Downloads/contact_maps_pdb40d
+#extract_model $HOME/Downloads/astral_40p $HOME/Downloads/astral_40p_models
+make_contact_map $HOME/Downloads/astral_40p_models $HOME/Downloads/contact_maps_astral_40p
 
                                          
