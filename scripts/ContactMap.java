@@ -262,14 +262,14 @@ where resAi, resBi are numbers.
 		    {
 
 			fileLine = bufferedReader.readLine();
-			// System.out.println(fileLine);
+			System.out.println(fileLine);
 			found = fileLine.indexOf("MOLECULE")!=-1;
 			
 		    }
 		
 		/* here we know we reach the juici part of the file */
 		found = false;
-		while((!found)&&(bufferedReader.ready())&&(numberCAs < MAXCAATOMS))
+		while((!found)&&(bufferedReader.ready()))
 		    {
 			aLineToken1 ="";
 			aLineToken2 ="";
