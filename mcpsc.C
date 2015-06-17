@@ -424,93 +424,71 @@ void CE::fill_dataset_details(char *dir_name, char **filenames) {
 ////////////////////////////////////////////////////////////////////
 void CE::parse_dataset_files_make_entries(char *data_dir, char** filenames,
 		int file_count, char *db_tmp_path, protein_data *proteins_data) {
-	char cmd[] = "scratch";
-	char *parms[6];
-	int parm_count;
+	char *mkdb_command, *ent1;
 
-	// initialize scratch
-	parms[1] = cmd;
-	char slash_cmd[] = "/";
-	for (int i = 0; i < file_count; i++) {
-		char *mkdir_cmd1;
-		char rm_cmd[] = "rm -rf ";
-		setText(&mkdir_cmd1, rm_cmd);
-		addText(&mkdir_cmd1, db_tmp_path);
-		addText(&mkdir_cmd1, slash_cmd);
-		addText(&mkdir_cmd1, filenames[i]);
-		system(mkdir_cmd1);
+	for(int i = 0; i < file_count; i++) {
+	char *pdb_file1 = filenames[i];
+	char *chain_id1 = "-";
+	printf("%s\n",filenames[i]);
+	char *user_file1, *entity_id1;
+	std::stringstream ss;
+	//ss << "mkdir -p " << db_tmp_path << "/" << filenames[i];
+	//system(ss.str().c_str());
 
-		char *mkdir_cmd;
-		char mk_cmd[] = "mkdir ";
-		setText(&mkdir_cmd, mk_cmd);
-		addText(&mkdir_cmd, db_tmp_path);
-		addText(&mkdir_cmd, slash_cmd);
-		addText(&mkdir_cmd, filenames[i]);
-		system(mkdir_cmd);
-		// db path
-		char *db_path;
-		setText(&db_path, db_tmp_path);
-		addText(&db_path, slash_cmd);
-		addText(&db_path, filenames[i]);
-		parms[2] = db_path;
-		// get qualified path to file
-		char *file_path;
-		setText(&file_path, data_dir);
-		addText(&file_path, slash_cmd);
-		addText(&file_path, filenames[i]);
-		//
-		parms[3] = file_path;
-		parm_count = 4;
-		alt_entry(parm_count, parms);
+	ss.str(std::string());
+	ss << "/media/lvm/astral/pdb_style/mkDB scratch "  << db_tmp_path << " " << data_dir << "/" << filenames[i];
+
+	// printf("%s\n", ss.str().c_str());
+	system(ss.str().c_str());
+
+	char *com1 = "USR1";
+
+	DB db;
+	//ss.str(std::string());
+	//ss << db_tmp_path << "/" << filenames[i];
+	db.setPath(db_tmp_path);//const_cast<char*>(ss.str().c_str()));
+
+	Property name_enp("name.enp"), nse_enp("n_se.enp"), ca_enp("c_a.enp"),
+			seq_enp("seq.enp"), code3_mon("code3.mon"), se_enc("se.enc"),
+			i_enc_enp("i_enc.enp"), id_com("id.com"), comp_enp("compnd.com"),
+			i_com_enp("i_com.enp"), i_enp_com("i_enp.com");
+
+	int iEnp11, iEnp12, iEnp21, iEnp22;
+
+	int iCom1 = id_com.find(com1);
+	//printf("iCom1: %d\n",iCom1);
+
+	if (*chain_id1 != '-') {
+		iEnp11 = name_enp.find(ent1);
+	} else {
+		iEnp11 = *i_enp_com.item4(iCom1);
 	}
+	//printf("iEnp11: %d\n",iEnp11);
 
-	for (int i = 0; i < file_count; i++) {
-		//
-		DB db;
-		char *db_path;
-		setText(&db_path, db_tmp_path);
-		addText(&db_path, slash_cmd);
-		addText(&db_path, filenames[i]);
-		db.setPath(db_path);
+	char *name1;
 
-		char fname1[] = "name.enp", fname2[] = "n_se.enp", fname3[] = "c_a.enp",
-				fname4[] = "seq.enp", fname5[] = "code3.mon", fname6[] =
-						"se.enc", fname7[] = "i_enc.enp", fname8[] = "id.com",
-				fname9[] = "compnd.com", fname10[] = "i_com.enp", fname11[] =
-						"i_enp.com";
-		Property name_enp(fname1), nse_enp(fname2), ca_enp(fname3), seq_enp(
-				fname4), code3_mon(fname5), se_enc(fname6), i_enc_enp(fname7),
-				id_com(fname8), comp_enp(fname9), i_com_enp(fname10), i_enp_com(
-						fname11);
+	int ienp1 = iEnp11;
+	std:stringstream ns;
+	ns << pdb_file1 << ":" << (name_enp.item1(ienp1) + 5);
 
-		protein_data protein;
-		char ent[] = "USR1:";
-		char *com;
-		setText(&com, ent);
-		com[4] = '\0';
-		protein.iCom = id_com.find(com);
-		protein.iEnp1 = *i_enp_com.item4(protein.iCom);
-		protein.iEnp2 = *i_enp_com.item4(protein.iCom + 1);
-		if (protein.iEnp1 == -1 || protein.iEnp2 == -1) {
-			printf("Chain %s not found\n", filenames[i]);
-			continue;
-		}
-		//
-		char *name;
-		setText(&name, filenames[i]);
-		char col_cmd[] = ":";
-		addText(&name, col_cmd);
-		addText(&name, name_enp.item1(protein.iEnp1) + 5);
-		//
-		protein.name = name;
-		protein.ent = ent;
-		protein.nSe = *nse_enp.item2(protein.iEnp1);
-		//protein.se = se_enc.item2(*i_enc_enp.item4(protein.iEnp1), 1);
-		protein.seq = seq_enp.item1(protein.iEnp1, 1);
-		flt4 *raw_struct = ca_enp.itemf(protein.iEnp1);
-		protein.raw_struct = raw_struct;
-		protein.ca = arrayToXYZ(raw_struct, protein.nSe);
-		proteins_data[i] = protein;
+	protein_data protein;
+	protein.iCom = id_com.find(com1);
+	protein.iEnp1 = *i_enp_com.item4(protein.iCom);
+	if (protein.iEnp1 == -1 || protein.iEnp2 == -1) {
+		printf("Chain %s not found\n", filenames[i]);
+		continue;
+	}
+	//
+	protein.name = filenames[i]; //const_cast<char*>(ns.str().c_str());
+	protein.ent = com1;
+	protein.iEnp1 = ienp1;
+	protein.nSe = *nse_enp.item2(protein.iEnp1);
+	//protein.se = se_enc.item2(*i_enc_enp.item4(protein.iEnp1), 1);
+	protein.seq = seq_enp.item1(protein.iEnp1, 1);
+	flt4 *raw_struct = ca_enp.itemf(protein.iEnp1);
+	protein.raw_struct = raw_struct;
+	protein.ca = arrayToXYZ(raw_struct, protein.nSe);
+	proteins_data[i] = protein;	
 	}
 }
 ////////////////////////////////////////////////////////////////////
@@ -537,7 +515,7 @@ void read_params(char *db_tmp_path, char *pdb_dir_name, char **argv) {
 void ce_load_data(CE *ce, char *db_tmp_path, char *pdb_dir_name, int file_count,
 		char **filenames, protein_data *proteins_data) {
 	// load data
-	//ce->fill_dataset_details(pdb_dir_name, filenames);
+	// ce->fill_dataset_details(pdb_dir_name, filenames);
 	ce->parse_dataset_files_make_entries(pdb_dir_name, filenames, file_count,
 			db_tmp_path, proteins_data);
 }
