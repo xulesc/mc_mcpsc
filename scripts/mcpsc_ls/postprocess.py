@@ -14,9 +14,11 @@ GT_INFILE='workspace/data/tsv.3.2.0.VS.1.75.outpairs'
 PP_OUTFILE='batch_run/postprocessed.dat'
 
 PREP_PP=False
+DO_NNI=True
 
 ###############################################################################
 GT_SF_EXTRACT = lambda x : x.split('.')[2]
+EXCLUDE_HASH  = lambda x : not x.startswith('#')
 
 ###############################################################################
 def read_psc_data(outfile, pm, fname, idx, inv=0, sep=' '):
@@ -67,3 +69,11 @@ if PREP_PP:
   pp_outfile.close()
 
 ###############################################################################
+if DO_NNI:
+  pscdata = map(lambda x: x.split(' '), filter(EXCLUDE_HASH, open(PP_OUTFILE)))
+  for pthresh in xrange(101):
+    thresh = pthres * 1.0 / 100
+    
+
+###############################################################################
+
