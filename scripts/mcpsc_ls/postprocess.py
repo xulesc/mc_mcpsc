@@ -18,7 +18,7 @@ DO_NNI=False
 
 ###############################################################################
 GT_SF_EXTRACT = lambda x : x.split('.')[2]
-GT_SF_EXTRACT2 = lambda x : 
+GT_SF_EXTRACT2 = lambda x : 1
 EXCLUDE_HASH  = lambda x : not x.startswith('#')
 
 ###############################################################################
@@ -51,7 +51,7 @@ def read_gt(fname, outfile):
     %(len(ret),timer() - start))
   return ret
   
-def read_psc_data(fname):
+def read_post_data(fname):
   ret = []
   for line in filter(EXCLUDE_HASH, open(fname)):
     data = line.replace('\n','').split(' ')
@@ -92,7 +92,7 @@ if PREP_PP:
 
 ###############################################################################
 if DO_NNI:
-  pscdata = read_psc_data(PP_OUTFILE)
+  pscdata = read_post_data(PP_OUTFILE)
   total_homologs = len(filter(lambda x : homologous_domains(x[2],x[3]), pscdata))
   total_non_homologs = len(pscdata) - total_homologs
   for pthresh in xrange(101):
