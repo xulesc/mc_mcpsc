@@ -79,7 +79,7 @@ if PREP_PP:
   grdata 		= read_psc_data(pp_outfile,'gr',GR_INFILE,6,sep='\t')
   tmdata 		= read_psc_data(pp_outfile,'tm',TM_INFILE,8,inv=1)
   usmdata 		= read_psc_data(pp_outfile,'um',UM_INFILE,2)
-  gtdata		= read_gt(pp_outfile,GT_INFILE)
+  gtdata		= read_gt(GT_INFILE,pp_outfile)
 
   for k, v in gtdata.iteritems():
     cev = cedata.get(k); fastv = fastdata.get(k)
