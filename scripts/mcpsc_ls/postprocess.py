@@ -13,11 +13,12 @@ GT_INFILE='workspace/data/tsv.3.2.0.VS.1.75.outpairs'
 
 PP_OUTFILE='batch_run/postprocessed.dat'
 
-PREP_PP=False
-DO_NNI=True
+PREP_PP=True
+DO_NNI=False
 
 ###############################################################################
 GT_SF_EXTRACT = lambda x : x.split('.')[2]
+GT_SF_EXTRACT2 = lambda x : 
 EXCLUDE_HASH  = lambda x : not x.startswith('#')
 
 ###############################################################################
@@ -49,6 +50,26 @@ def read_gt(fname, outfile):
   outfile.write('# gt data read count %d in %d seconds\n'
     %(len(ret),timer() - start))
   return ret
+  
+def read_psc_data(fname):
+  ret = []
+  for line in filter(EXCLUDE_HASH, open(fname)):
+    data = line.replace('\n','').split(' ')
+    ret.append([data[0], data[1], data[2], data[3], int(data[4])] + 
+      map(lambda x : float(x), data[5:]))
+  return ret
+  
+def homologous_domains(a, b): return GT_SF_EXTRACT(a) == GT_SF_EXTRACT(b)
+
+def get_micro_stats(pscdata, thresh, total_homologs, total_non_homologs):
+  lpscdata = filter(lambda x : x[-2] >= 0 and x[-2] <= thresh, pscdata)
+  tp = len(filter(lambda x : homologous_domains(x[2],x[3]), lpscdata))
+  fp = len(lpscdata) - tp
+  fn = total_homologs - tp
+  tn = total_non_homologs - fp
+  return [tp, fp, fn, tn, float(tp)/max(.0001,float(tp+fp)), 
+    float(tp)/max(.0001,float(tp+fn)), float(tp)/total_homologs, 
+    float(fp)/total_non_homologs]
 
 ###############################################################################
 if PREP_PP:
@@ -64,16 +85,19 @@ if PREP_PP:
     cev = cedata.get(k); fastv = fastdata.get(k)
     grv = grdata.get(k); tmv = tmdata.get(k)
     usmv = usmdata.get(k)
-    pp_outfile.write('%s %s %s %s %d %f %f %f %f %f\n' %(k[0], k[1], v[0], v[1],
-      v[-1], max(-1,cev), max(-1,fastv), max(-1,grv), max(-1,tmv), max(-1,usmv)))
+    pp_outfile.write('%s %s %s %s %s %s %d %f %f %f %f %f\n' %(k[0], k[1], 
+      v[0], v[1], v[2], v[3], v[-1], max(-1,cev), max(-1,fastv), max(-1,grv), 
+      max(-1,tmv), max(-1,usmv)))
   pp_outfile.close()
 
 ###############################################################################
 if DO_NNI:
-  pscdata = map(lambda x: x.split(' '), filter(EXCLUDE_HASH, open(PP_OUTFILE)))
+  pscdata = read_psc_data(PP_OUTFILE)
+  total_homologs = len(filter(lambda x : homologous_domains(x[2],x[3]), pscdata))
+  total_non_homologs = len(pscdata) - total_homologs
   for pthresh in xrange(101):
-    thresh = pthres * 1.0 / 100
-    
+    thresh = pthresh * 1.0 / 100
+    print [thresh] + get_micro_stats(pscdata, thresh, total_homologs, total_non_homologs)
 
 ###############################################################################
 
