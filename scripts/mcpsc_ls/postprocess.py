@@ -9,7 +9,7 @@ FS_INFILE='batch_run/results_save/fast_results_1.txt'
 GR_INFILE='batch_run/results_save/results.txt.sim'
 TM_INFILE='batch_run/results_save/tm_results_1.txt'
 UM_INFILE='batch_run/results_save/usm_results.txt'
-GT_INFILE='workspace/data/tsv.3.2.0.VS.1.75.outpairs'
+GT_INFILE='workspace/data/ground_truth'
 
 PP_OUTFILE='batch_run/postprocessed.dat'
 
@@ -18,7 +18,7 @@ DO_NNI=False
 
 ###############################################################################
 GT_SF_EXTRACT = lambda x : x.split('.')[2]
-GT_SF_EXTRACT2 = lambda x : 1
+GT_SF_EXTRACT2 = lambda x : x.split('.')[2]
 EXCLUDE_HASH  = lambda x : not x.startswith('#')
 
 ###############################################################################
@@ -34,7 +34,7 @@ def read_psc_data(outfile, pm, fname, idx, inv=0, sep=' '):
     except:
       pass
   anp = np.array(map(lambda x : x[1], retlist))
-  normanp = list((anp-anp.min())/(anp.max()-anp.min()))
+  normanp = list((anp-min(anp))/(max(anp)-min(anp)))
   ret = dict(map(lambda x : (retlist[x][0], normanp[x]), xrange(len(normanp))))
   outfile.write('# %s data read count %d in %d seconds\n' 
     %(pm,len(ret),timer() - start))
@@ -55,11 +55,11 @@ def read_post_data(fname):
   ret = []
   for line in filter(EXCLUDE_HASH, open(fname)):
     data = line.replace('\n','').split(' ')
-    ret.append([data[0], data[1], data[2], data[3], int(data[4])] + 
-      map(lambda x : float(x), data[5:]))
+    ret.append([data[0], data[1], data[4], data[5], int(data[6])] + 
+      map(lambda x : float(x), data[7:]))
   return ret
   
-def homologous_domains(a, b): return GT_SF_EXTRACT(a) == GT_SF_EXTRACT(b)
+def homologous_domains(a, b): return GT_SF_EXTRACT2(a) == GT_SF_EXTRACT2(b)
 
 def get_micro_stats(pscdata, thresh, total_homologs, total_non_homologs):
   lpscdata = filter(lambda x : x[-2] >= 0 and x[-2] <= thresh, pscdata)
@@ -80,7 +80,7 @@ if PREP_PP:
   tmdata 		= read_psc_data(pp_outfile,'tm',TM_INFILE,8,inv=1)
   usmdata 		= read_psc_data(pp_outfile,'um',UM_INFILE,2)
   gtdata		= read_gt(GT_INFILE,pp_outfile)
-
+  
   for k, v in gtdata.iteritems():
     cev = cedata.get(k); fastv = fastdata.get(k)
     grv = grdata.get(k); tmv = tmdata.get(k)
