@@ -13,13 +13,15 @@ GT_INFILE='workspace/data/ground_truth'
 
 PP_OUTFILE='batch_run/postprocessed.dat'
 
-PREP_PP=True
-DO_NNI=False
+PREP_PP=False
+DO_NNI=True
+DO_AUC=True
+DO_SUB=False
 
 ###############################################################################
-GT_SF_EXTRACT = lambda x : x.split('.')[2]
-GT_SF_EXTRACT2 = lambda x : x.split('.')[2]
-EXCLUDE_HASH  = lambda x : not x.startswith('#')
+GT_SF_EXTRACT 	= lambda x : x.split('.')[2]
+GT_SF_EXTRACT2 	= lambda x : '.'.join(x.split('.')[0:2])
+EXCLUDE_HASH  	= lambda x : not x.startswith('#')
 
 ###############################################################################
 def read_psc_data(outfile, pm, fname, idx, inv=0, sep=' '):
@@ -51,25 +53,44 @@ def read_gt(fname, outfile):
     %(len(ret),timer() - start))
   return ret
   
-def read_post_data(fname):
+def read_post_data(fname, flambda=None):
   ret = []
   for line in filter(EXCLUDE_HASH, open(fname)):
     data = line.replace('\n','').split(' ')
-    ret.append([data[0], data[1], data[4], data[5], int(data[6])] + 
-      map(lambda x : float(x), data[7:]))
+    psc_vals = map(lambda x : float(x), data[7:])
+    ##
+    mcpsc_val = -1.0
+    # we use only ce,fast,tmalign because the others are below 50% coverage
+    upsc_vals = [psc_vals[0], psc_vals[1], psc_vals[3]]
+    valid_psc_vals = filter(lambda x : x >= 0, upsc_vals)
+    if valid_psc_vals != None and len(valid_psc_vals) > 0:
+      mcpsc_val = sum(valid_psc_vals) / len(valid_psc_vals)
+      #mcpsc_val = min(valid_psc_vals)
+    ##
+    ret.append([data[0], data[1], GT_SF_EXTRACT2(data[4]), 
+      GT_SF_EXTRACT2(data[5]), int(data[6])] + psc_vals + [mcpsc_val])
+    #print ret[len(ret)-1]      
+  print len(ret)
+  if filter != None:
+    ret=filter(flambda,ret)
+  print len(ret)
   return ret
   
 def homologous_domains(a, b): return GT_SF_EXTRACT2(a) == GT_SF_EXTRACT2(b)
 
-def get_micro_stats(pscdata, thresh, total_homologs, total_non_homologs):
-  lpscdata = filter(lambda x : x[-2] >= 0 and x[-2] <= thresh, pscdata)
-  tp = len(filter(lambda x : homologous_domains(x[2],x[3]), lpscdata))
+def get_micro_stats(pscdata, thresh, total_homologs, total_non_homologs, midx):
+  lpscdata = filter(lambda x : x[midx] >= 0 and x[midx] <= thresh, pscdata)
+  tp = len(filter(lambda x : x[2] == x[3], lpscdata))
   fp = len(lpscdata) - tp
   fn = total_homologs - tp
   tn = total_non_homologs - fp
   return [tp, fp, fn, tn, float(tp)/max(.0001,float(tp+fp)), 
     float(tp)/max(.0001,float(tp+fn)), float(tp)/total_homologs, 
     float(fp)/total_non_homologs]
+    
+def calc_auc(roc):
+  f_auc = lambda x : (roc[x][0]+roc[x-1][0]) * (roc[x][1]-roc[x-1][1]) / 2.0
+  return sum(map(f_auc, range(1,len(roc))))                
 
 ###############################################################################
 if PREP_PP:
@@ -91,13 +112,53 @@ if PREP_PP:
   pp_outfile.close()
 
 ###############################################################################
+def do_nni_core(flambda=None):
+  pscdata = read_post_data(PP_OUTFILE, flambda)
+  methods = ['ce', 'fast', 'gralign', 'tmalign', 'usm', 'mcpsc']
+  method_index = [5, 6, 7, 8, 9, 10]
+  for m,midx in zip(methods,method_index):
+    print 'processing %s' %m
+    fpscdata = filter(lambda x : x[midx] >= 0, pscdata)
+    total_homologs = len(filter(lambda x : x[2] == x[3], fpscdata))
+    total_non_homologs = len(fpscdata) - total_homologs
+    of = open('batch_run/perf/%s_perf.dat' %m, 'w')
+    for pthresh in xrange(-1,101):
+      thresh = pthresh * 1.0 / 100
+      stats = get_micro_stats(fpscdata, thresh, total_homologs, 
+        total_non_homologs, midx)
+      of.write('%s\n' %' '.join(map(lambda x : str(x), [thresh] + stats)))
+    of.close()
+  print 'done'
+
+#flambda=lambda x : x[2][0] == sclass or x[3][0] == sclass
 if DO_NNI:
-  pscdata = read_post_data(PP_OUTFILE)
-  total_homologs = len(filter(lambda x : homologous_domains(x[2],x[3]), pscdata))
-  total_non_homologs = len(pscdata) - total_homologs
-  for pthresh in xrange(101):
-    thresh = pthresh * 1.0 / 100
-    print [thresh] + get_micro_stats(pscdata, thresh, total_homologs, total_non_homologs)
+  do_nni_core()
+
+###############################################################################
+def do_auc_core():
+  #roc_data_dirs=['batch_run/perf-cath-avg', 'batch_run/perf-cath-min',
+  #  'batch_run/perf-scop-avg', 'batch_run/perf-scop-min']
+  roc_data_dirs=['batch_run/perf']
+  roc_data_meth=['ce_perf.dat', 'fast_perf.dat', 'gralign_perf.dat',
+    'mcpsc_perf.dat', 'tmalign_perf.dat', 'usm_perf.dat']
+  roc_data_files=[]
+  for rd in roc_data_dirs:
+    for rf in roc_data_meth:
+      roc_data_files.append('%s/%s' %(rd,rf))
+  for roc_data_file in roc_data_files:
+    roc_data=map(lambda x : x.split(' ')[-2:], open(roc_data_file))
+    roc_data=map(lambda x : (float(x[0]), float(x[1])), roc_data )
+    print '%s %f' %(roc_data_file, calc_auc(roc_data))
+
+if DO_AUC:
+  do_auc_core()        
+
+###############################################################################
+if DO_SUB:
+  for sclass in ['1','2','3','4']:
+    print sclass
+    do_nni_core(flambda=lambda x : x[2][0] == sclass or x[3][0] == sclass)
+    do_auc_core()
 
 ###############################################################################
 
