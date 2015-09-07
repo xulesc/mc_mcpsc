@@ -288,6 +288,21 @@ class MC_HANDLER:
 
 class GR_HANDLER:
 
+    """
+    Provides a wrapper for GRALIGN
+
+    This class provides a wrapper for the GRALIGN PSC method. The handler is
+    different from the other handlers implemented because of the nature of
+    the GRALIGN binary.
+
+    Key differences in this handler are a) directory containing structure
+    files is accepted rather than pairs of the structure files and b) the
+    output from the program does not need to be read back since it is
+    directly written to a file.
+
+    This is a more robust handler due to the lack of textual interface.
+    """
+
     def __init__(self, binPath):
         self._binPath = binPath
 
@@ -309,6 +324,13 @@ class GR_HANDLER:
 
 
 class USM_HANDLER:
+
+    """
+    Provides USM PSC method
+
+    This class provides implementation of the USM PSC method. The method is
+    implemented in pure python due to the low complexity of the algorithm.
+    """
 
     def __init__(self):
         self._MAX_CONTACTS = 1000
