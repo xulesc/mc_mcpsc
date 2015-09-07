@@ -7,17 +7,21 @@ set out "sc_psc_roc.eps"
 
 set key bottom right
 
-set key font ",16"
-set xtics font ",14"
-set xlabel "False Positive Rate (FPR)" font ",18"
-set ylabel "True Positive Rate (TPR)" font ",18"
+set key font ",24"
+set xtics font ",22"
+set ytics font ",22"
+set xlabel "False Positive Rate (FPR)" font ",28"
+set ylabel "True Positive Rate (TPR)" font ",28"
 
-plot 'perf/mcpsc_perf.dat' using 9:8 title 'MCPSC' lc rgb "black" with lines, \
- 'perf/tmalign_perf.dat' using 9:8 title 'TMALIGN' lc rgb "red" with lines, \
- 'perf/ce_perf.dat' using 9:8 title 'CE' lc rgb "green" with lines, \
- 'perf/gralign_perf.dat' using 9:8 title 'GR-ALIGN' lc rgb "blue" with lines, \
- 'perf/fast_perf.dat' using 9:8 title 'FAST' lc rgb "cyan" with lines, \
- 'perf/usm_perf.dat' using 9:8 title 'USM' lc rgb "purple" with lines;
+#set termoption lw 5
+#set for [i=1:10] style line i linewidth 5
+
+plot 'perf/mcpsc_perf.dat' using 9:8 title 'MCPSC' lw 4 lc rgb "black" with lines, \
+ 'perf/tmalign_perf.dat' using 9:8 title 'TMALIGN' lw 4 lc rgb "red" with lines, \
+ 'perf/ce_perf.dat' using 9:8 title 'CE' lw 4 lc rgb "green" with lines, \
+ 'perf/gralign_perf.dat' using 9:8 title 'GR-ALIGN' lw 4 lc rgb "blue" with lines, \
+ 'perf/fast_perf.dat' using 9:8 title 'FAST' lw 4 lc rgb "cyan" with lines, \
+ 'perf/usm_perf.dat' using 9:8 title 'USM' lw 4 lc rgb "purple" with lines;
  
 
 set out "sc_psc_pr.eps"
