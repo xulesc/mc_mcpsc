@@ -1,5 +1,39 @@
 #!/usr/bin/env python
 
+"""
+A processing script for running all-to-all PSC using multiple PSC methods
+and PDB data files. Pairwise PSC tasks are distributed over multiple threads
+in order to speed up the all-to-all task.
+
+Default directory structure of the current working directory where this
+script should be run from:
+
+base_directory\
+              programs
+              data
+              work
+
+Configuration variables:
+ PROGRAMS: list of binaries representing the PSC methods that will be
+executed during the processing
+
+ PROGDIR: name of the directory where the PSC binaries reside (default
+value is programs)
+
+ DATADIR: the directory where the PDF files will be read in from (default
+value is data)
+
+ WORKDIR: the output director to which any intermediate files and the final
+results will be written (default value is work)
+
+ PDBEXTN: the extension of the PDB structure files (default value .ent)
+
+ THREADS: the nuber of threads that should be used (default value 16)
+
+ DPRLIST: name of the file where the list of domain pairs to be processed is
+supplied. These will be searched for among the PDB files in the DATADIR.
+"""
+
 import sys
 import os
 import subprocess
@@ -17,6 +51,7 @@ DATADIR = 'data'
 WORKDIR = 'work'
 PDBEXTN = '.ent'
 THREADS = 16
+DPRLIST = '../workspace/data/ground_truth'
 # END OF CONFIGURATION
 
 FASTOUT = open('work/fast_results.txt', 'w')
@@ -394,7 +429,7 @@ gr = GR_HANDLER('%s/%s' % (PROGDIR, PROGRAMS[4]))
 
 pdb_files = os.listdir(DATADIR)
 psc_pairs = []
-for line in open('../workspace/data/ground_truth'):
+for line in open(DPRLIST):
     ldata = line.split('\t')
     psc_pairs.append(
         ('%s/%s.ent' % (DATADIR, ldata[0]), '%s/%s.ent' % (DATADIR, ldata[1])))
