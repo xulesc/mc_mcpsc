@@ -110,8 +110,7 @@ class GRALIGN_PRE_PROCESSOR:
             filter(lambda x: x.endswith(".gw"), os.listdir(self._tmpDir)))
         l3 = len(
             filter(lambda x: x.endswith(".ndump"), os.listdir(self._tmpDir)))
-        print 'pdb files: %d, contact maps: %d, signature files: %d'
-        %(l1, l2, l3)
+        print 'pdb files: %d, contact maps: %d, signaturs: %d' % (l1, l2, l3)
 
 
 # END OF PRE-PROCESS
