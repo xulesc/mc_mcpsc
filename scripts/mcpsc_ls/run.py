@@ -31,6 +31,20 @@ lock = threading.Lock()
 
 class GRALIGN_PRE_PROCESSOR:
 
+    """
+    Provides pre-processing functionality needed by GRALIGN.
+
+    The class provides functionality to run the two step pre-processing
+    required by the GRALIGN program. The first step is provided by the
+    GRALIGN program CMAP and the second step is provided by the GRALIGN
+    program DCOUNT. This class wraps the process of running these two
+    programs.
+
+    At the end of the process basic number statistics of how many PDB files
+    were processed, how many contact maps were generated and how many
+    signature files were generated is output.
+    """
+
     def __init__(self, binPath1, binPath2, tmpDir):
         self._binPath1 = binPath1
         self._binPath2 = binPath2
