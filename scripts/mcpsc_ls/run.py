@@ -429,6 +429,15 @@ def ce_process_pair(ps): return ce.process_pair(ps[0], ps[1])
 
 
 def doMulti(outfilename, procmethod, pairs):
+
+    """
+    Implements the mutli-threaded processing using thread pool equal to the
+    number of threads defined in the configuration. Each thread runs tasks
+    till all tasks have been exhausted. Output from each tasks processing
+    are retined in a global data structure which is written out to a file at
+    the end of the threaded processing.
+    """
+
     start = timer()
     p = Pool(THREADS)
     reduced = p.map(procmethod, pairs)
