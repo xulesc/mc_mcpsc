@@ -197,6 +197,16 @@ class TM_HANDLER:
 
 class FAST_HANDLER:
 
+    """
+    Provides wrapper for FAST
+
+    The class provides a wrapper for the FAST PSC method. FAST is available
+    only as a binary.
+
+    The text level interface used by this class is consistent with the
+    binary distribution of the FAST method.
+    """
+
     def __init__(self, binPath):
         self._binPath = binPath
 
