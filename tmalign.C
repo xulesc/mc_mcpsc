@@ -284,7 +284,7 @@ int main_process(char *ss1, char *ss2, char *seq1, char *seq2,
 	float tm8;
 	int m_d0__;
 	float dis2;
-	static __thread float xtm1[5000], ytm1[5000], ztm1[5000], xtm2[5000], ytm2[5000],
+	float xtm1[5000], ytm1[5000], ztm1[5000], xtm2[5000], ytm2[5000],
 			ztm2[5000];
 	int n_al__;
 	int n_eq__;

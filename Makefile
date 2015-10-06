@@ -31,9 +31,9 @@ OBJECTS := $(SOURCES:.C=.o)
 MOBJECTS := $(MODULES:.C=.o)
 
 CC := g++
-CE_CFLAGS := $(CFLAGS) -DFUNCPROTO -DREAD_WRITE -DSGI  -fopenmp -std=c++11 -O3 #-g 
-#-fstack-check -fstack-protector-all -Wstack-protector -Wtabs
-CE_LFLAGS := $(LFLAGS) -lm -ffast-math -fopenmp -lboost_iostreams -lboost_system -lz -static 
+CE_CFLAGS := $(CFLAGS) -DFUNCPROTO -DREAD_WRITE -DSGI -O3 -fopenmp -std=c++11
+CE_LFLAGS := $(LFLAGS) -lm -ffast-math -fopenmp -lboost_iostreams -lboost_system -lpthread -lz -static 
+#-lboost_iostreams -lboost_system -lpthread
 
 test: $(MOBJECTS) 
 	$(CC) $(CE_CFLAGS) -Wall -c mcpsc.C -o mcpsc.o #-D ONLY_TMALIGN -D ONLY_CE -D ONLY_USM

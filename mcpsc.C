@@ -6,8 +6,6 @@
 #include <sys/timeb.h>
 #include <stdio.h>
 #include <omp.h>
-#define _GNU_SOURCE
-#include <stdlib.h>
 
 //
 #define CE_ALGO_TYPE 1
@@ -23,6 +21,19 @@ typedef struct {
 	protein_data *protein1, *protein2;
 	int protein1_idx, protein2_idx;
 } job_descriptor;
+
+class SortData {
+public:
+	SortData(int i, int p) {
+		product = p;
+		index = i;
+	}	
+	int product;
+	int index;
+	bool operator<(const SortData &rhs) const { 
+		return product > rhs.product;  // descending
+	}	
+};
 
 int *job_indexes;
 job_descriptor *job_pool;
@@ -40,10 +51,6 @@ int get_file_count(char *dir_name);
 void ce_load_data(CE *ce, char *db_tmp_path, char *pdb_dir_name, int file_count,
 		char **filenames, protein_data *proteins_data);
 void read_params(char *db_tmp_path, char *pdb_dir_name, char **argv);
-int get_file_count2(char *dom_files);
-void fill_filenames(int file_count1, char **filenames1, char *dom_files);
-int get_job_count(char *pair_indices);
-void load_job_pairs(int job_pairs[][2], char *pair_indices);
 
 MasterToClientTransferBlock client_in_data;
 ClientToMasterTransferBlock master_in_data;
@@ -87,6 +94,37 @@ int get_min_index(int size, int *data) {
 	return lowest;
 }
 
+/*void get_partitions(int split_size, int algo_type, int job_count, bool sort, std::vector<SortData> &data) {
+	//int part_sum[split_size];
+	// init all sums
+	//for(int i = 0; i < split_size; i++) {
+	//	part_sum[i] = 0;
+	//}
+	// put job index and length product in vector
+	//std::vector<SortData> data;
+	for(int i = 0; i < job_count; i++) {
+		if(job_pool[i].algo_type == algo_type) {
+			int product;
+			if(algo_type == CE_ALGO_TYPE) {
+				product = job_pool[i].protein1->nSe * job_pool[i].protein2->nSe;
+			} else {
+				product = seq_length[job_pool[i].protein1_idx] * seq_length[job_pool[i].protein2_idx];
+			}
+			data.push_back(SortData(i, product));
+		}
+	}
+	// sort vector (reverse)
+	if(sort)
+		std::sort(data.begin(), data.end());
+	// greedy partition
+	//std::vector<int> partitions[split_size];
+	//for(auto datum : data) {
+	//	int index = get_min_index(split_size, part_sum);
+	//	partitions[index].push_back(datum.index);
+	//	part_sum[index] += datum.product;
+	//}
+	//return data;
+}*/
 
 void dispatch(int ue_count, int job_index) {
 	while(1) {
@@ -96,70 +134,105 @@ void dispatch(int ue_count, int job_index) {
 	}
 }
 
-void do_usm(char *pdb_cm_name, char *cm_files, int jcount, int jobs[][2]) {
+void do_usm(char *pdb_cm_name) {
 	struct timeb tp1, tp2, otp1, otp2;
 	// do usm and wrap up
-	int cm_file_count = get_file_count2(cm_files);
+	int cm_file_count = get_file_count(pdb_cm_name);
 	char *cm_filenames[cm_file_count];
-	fill_filenames(cm_file_count, cm_filenames, cm_files);
-    ftime(&tp1);
+	fill_dataset_details(pdb_cm_name, cm_filenames);
+        ftime(&tp1);
 	USM usm;
-    usm.load_data(cm_file_count, pdb_cm_name, cm_filenames);
+        usm.load_data(cm_file_count, pdb_cm_name, cm_filenames);
 	ftime(&tp2);
-    cout << "USM data load time: " << diff_timeb(tp1, tp2) << endl;
+        cout << "USM data load time: " << diff_timeb(tp1, tp2) << endl;
 
 	ftime(&otp1);
-	// usm.calculate_pairwise_distances();
-	usm.calculate_pairwise_distance(jcount, jobs, cm_filenames);
+	usm.calculate_pairwise_distances();
 	ftime(&otp2);
 	cout << "USM Total time (msec): " << diff_timeb(otp1, otp2) << endl;
 }
+
+/*void reset_jobs_sorted(int ue_count, int jcount, int *job_indexes) {
+//	for(int i = 0; i < jcount; i++)
+//		cout << "index: " << i << ", job_index: " << job_indexes[i] << endl;
+	cout << "sorting tasks per algo" << endl;
+	// create greedy partitions for CE & TMalign jobs
+	std::vector<SortData> sorted_ce_jobs;
+	get_partitions(ue_count - 1, CE_ALGO_TYPE, jcount, 1, sorted_ce_jobs);
+	std::vector<SortData> sorted_tm_jobs;
+	get_partitions(ue_count - 1, TMALIGN_ALGO_TYPE, jcount, 1, sorted_tm_jobs);
+	// make job list
+	int index = 0;
+	for(auto datum : sorted_ce_jobs)
+		job_indexes[index++] = datum.index;
+	for(auto datum : sorted_tm_jobs)
+		job_indexes[index++] = datum.index;	
+//	for(int i = 0; i < jcount; i++)
+//		cout << "index: " << i << ", job_index: " << job_indexes[i] << endl;
+	cout << "jobs set" << endl;
+}
+
+// returns 1 when is and 0 if not
+int isQuery(char *name, std::set<std::string> lines) {
+	string n = name;
+	for(auto line : lines)
+		if(n.find(line) == 0)	
+			return 1;
+	return 0;
+}*/
 
 int main(int argc, char **argv) {
 	struct timeb tp1, tp2;
 	struct timeb otp1, otp2;
 	// read params
-	char *db_tmp_path, *pdb_dir_name, *pdb_cm_name, *dom_files, 
-		*pair_indices, *cm_files;
+	char *db_tmp_path, *pdb_dir_name, *pdb_cm_name;
 	printf("reading params\n");
 	//read_params(db_tmp_path, pdb_dir_name, argv);
 	setText(&db_tmp_path, argv[1]);
 	setText(&pdb_dir_name, argv[2]);
 	setText(&pdb_cm_name, argv[3]);
-	setText(&dom_files, argv[4]);
-	setText(&pair_indices, argv[5]);
-	setText(&cm_files, argv[6]);
 	printf("db_tmp_path: %s\n", db_tmp_path);
 
-	// get file count, filenames and load pairs for ce, tmalign
-	int file_count = get_file_count2(dom_files);
-	char *filenames[file_count];
-	fill_filenames(file_count, filenames, dom_files);
-	int jcount = get_job_count(pair_indices);
-	int jobs[jcount][2];
-	load_job_pairs(jobs, pair_indices);
-
 	// get file count
+	int file_count = get_file_count(pdb_dir_name);
+	char *filenames[file_count];
 	protein_data proteins_data[file_count];
 
-#ifndef ONLY_CE
-#ifndef ONLY_TMALIGN
-	do_usm(pdb_cm_name, cm_files, jcount, jobs);
-#endif
-#endif
+	CE ce;
+	printf("loading CE data\n");
+	// load CE data and fill filename as side-effect
+	ftime(&tp1);
+	ce_load_data(&ce, db_tmp_path, pdb_dir_name, file_count, filenames,
+			proteins_data);
+	ftime(&tp2);
+	cout << "CE data load time: " << diff_timeb(tp1, tp2) << endl;
 
-
-	int nthreads, tid, counter, chunk = 1;
-#ifndef ONLY_CE
-#ifndef ONLY_USM
 	printf("loading TMalign data\n");
 	ftime(&tp1);
 	tmalign_load_data(file_count, filenames, pdb_dir_name);
 	ftime(&tp2);
 	cout << "TMalign data load time: " << diff_timeb(tp1, tp2) << endl;
-	//backbone_ backbone_1;
+	backbone_ backbone_1;
+
+#ifndef ONLY_CE
+#ifndef ONLY_TMALIGN
+	do_usm(pdb_cm_name);
+#endif
+#endif
+
+	int nthreads, tid, counter, chunk = 1;
+	int jobs[file_count * file_count][2];
+	int jcount = 0;
+#ifndef ONLY_CE
+#ifndef ONLY_USM
 	// do TMalign
 	ftime(&otp1);
+	for(int i = 0; i < file_count; i++) {
+		for (int j = 0; j < file_count; j++) {
+			jobs[jcount][0] = i;
+			jobs[jcount++][1] = j;
+		}
+	}
 	printf("jcount: %d\n",jcount);		
 
 #pragma omp parallel shared(jobs,amino_acid_chain_seq,atom_index,seq_amino_acids,seq_coords,jcount,nthreads,chunk) private(counter, tid) 
@@ -225,7 +298,7 @@ int main(int argc, char **argv) {
 					"id: %d, sec_job_start: %ld, sec_result_send: %ld, "
 					"processing_time_msec: %ld, data_collect_time_msec: %ld, "
 					"idle_time_msec: %ld\n", TMALIGN_ALGO_TYPE,
-					filenames[i], filenames[j], seq_length[i],
+					proteins_data[i].name, proteins_data[j].name, seq_length[i],
 					seq_length[j], ldata.rmsd, ldata.tm1, ldata.tm2, tid,
 					tp1.time, tp2.time, diff_timeb(tp1, tp2), 0, 0);
 	}
@@ -237,17 +310,18 @@ int main(int argc, char **argv) {
 
 #ifndef ONLY_TMALIGN
 #ifndef ONLY_USM
-	CE ce;
-	printf("loading CE data\n");
-	// load CE data and fill filename as side-effect
-	ftime(&tp1);
-	ce_load_data(&ce, db_tmp_path, pdb_dir_name, file_count, filenames,
-			proteins_data);
-	ftime(&tp2);
-	cout << "CE data load time: " << diff_timeb(tp1, tp2) << endl;
-
 	// do CE
+	//int nthreads, tid, counter, chunk = 1;
 	ftime(&otp1);
+	//int jobs[file_count * file_count][2];
+	//int jcount = 0;
+	jcount = 0;
+	for(int i = 0; i < file_count; i++) {
+		for (int j = 0; j < file_count; j++) {
+			jobs[jcount][0] = i;
+			jobs[jcount++][1] = j;
+		}
+	}
 	printf("jcount: %d\n",jcount);		
 
 #pragma omp parallel shared(jobs,proteins_data,jcount,nthreads,chunk) private(counter, tid) 
@@ -424,71 +498,93 @@ void CE::fill_dataset_details(char *dir_name, char **filenames) {
 ////////////////////////////////////////////////////////////////////
 void CE::parse_dataset_files_make_entries(char *data_dir, char** filenames,
 		int file_count, char *db_tmp_path, protein_data *proteins_data) {
-	char *mkdb_command, *ent1;
+	char cmd[] = "scratch";
+	char *parms[6];
+	int parm_count;
 
-	for(int i = 0; i < file_count; i++) {
-	char *pdb_file1 = filenames[i];
-	char *chain_id1 = "-";
-	printf("%s\n",filenames[i]);
-	char *user_file1, *entity_id1;
-	std::stringstream ss;
-	//ss << "mkdir -p " << db_tmp_path << "/" << filenames[i];
-	//system(ss.str().c_str());
+	// initialize scratch
+	parms[1] = cmd;
+	char slash_cmd[] = "/";
+	for (int i = 0; i < file_count; i++) {
+		char *mkdir_cmd1;
+		char rm_cmd[] = "rm -rf ";
+		setText(&mkdir_cmd1, rm_cmd);
+		addText(&mkdir_cmd1, db_tmp_path);
+		addText(&mkdir_cmd1, slash_cmd);
+		addText(&mkdir_cmd1, filenames[i]);
+		system(mkdir_cmd1);
 
-	ss.str(std::string());
-	ss << "/media/lvm/astral/pdb_style/mkDB scratch "  << db_tmp_path << " " << data_dir << "/" << filenames[i];
-
-	// printf("%s\n", ss.str().c_str());
-	system(ss.str().c_str());
-
-	char *com1 = "USR1";
-
-	DB db;
-	//ss.str(std::string());
-	//ss << db_tmp_path << "/" << filenames[i];
-	db.setPath(db_tmp_path);//const_cast<char*>(ss.str().c_str()));
-
-	Property name_enp("name.enp"), nse_enp("n_se.enp"), ca_enp("c_a.enp"),
-			seq_enp("seq.enp"), code3_mon("code3.mon"), se_enc("se.enc"),
-			i_enc_enp("i_enc.enp"), id_com("id.com"), comp_enp("compnd.com"),
-			i_com_enp("i_com.enp"), i_enp_com("i_enp.com");
-
-	int iEnp11, iEnp12, iEnp21, iEnp22;
-
-	int iCom1 = id_com.find(com1);
-	//printf("iCom1: %d\n",iCom1);
-
-	if (*chain_id1 != '-') {
-		iEnp11 = name_enp.find(ent1);
-	} else {
-		iEnp11 = *i_enp_com.item4(iCom1);
+		char *mkdir_cmd;
+		char mk_cmd[] = "mkdir ";
+		setText(&mkdir_cmd, mk_cmd);
+		addText(&mkdir_cmd, db_tmp_path);
+		addText(&mkdir_cmd, slash_cmd);
+		addText(&mkdir_cmd, filenames[i]);
+		system(mkdir_cmd);
+		// db path
+		char *db_path;
+		setText(&db_path, db_tmp_path);
+		addText(&db_path, slash_cmd);
+		addText(&db_path, filenames[i]);
+		parms[2] = db_path;
+		// get qualified path to file
+		char *file_path;
+		setText(&file_path, data_dir);
+		addText(&file_path, slash_cmd);
+		addText(&file_path, filenames[i]);
+		//
+		parms[3] = file_path;
+		parm_count = 4;
+		alt_entry(parm_count, parms);
 	}
-	//printf("iEnp11: %d\n",iEnp11);
 
-	char *name1;
+	for (int i = 0; i < file_count; i++) {
+		//
+		DB db;
+		char *db_path;
+		setText(&db_path, db_tmp_path);
+		addText(&db_path, slash_cmd);
+		addText(&db_path, filenames[i]);
+		db.setPath(db_path);
 
-	int ienp1 = iEnp11;
-	std:stringstream ns;
-	ns << pdb_file1 << ":" << (name_enp.item1(ienp1) + 5);
+		char fname1[] = "name.enp", fname2[] = "n_se.enp", fname3[] = "c_a.enp",
+				fname4[] = "seq.enp", fname5[] = "code3.mon", fname6[] =
+						"se.enc", fname7[] = "i_enc.enp", fname8[] = "id.com",
+				fname9[] = "compnd.com", fname10[] = "i_com.enp", fname11[] =
+						"i_enp.com";
+		Property name_enp(fname1), nse_enp(fname2), ca_enp(fname3), seq_enp(
+				fname4), code3_mon(fname5), se_enc(fname6), i_enc_enp(fname7),
+				id_com(fname8), comp_enp(fname9), i_com_enp(fname10), i_enp_com(
+						fname11);
 
-	protein_data protein;
-	protein.iCom = id_com.find(com1);
-	protein.iEnp1 = *i_enp_com.item4(protein.iCom);
-	if (protein.iEnp1 == -1 || protein.iEnp2 == -1) {
-		printf("Chain %s not found\n", filenames[i]);
-		continue;
-	}
-	//
-	protein.name = filenames[i]; //const_cast<char*>(ns.str().c_str());
-	protein.ent = com1;
-	protein.iEnp1 = ienp1;
-	protein.nSe = *nse_enp.item2(protein.iEnp1);
-	//protein.se = se_enc.item2(*i_enc_enp.item4(protein.iEnp1), 1);
-	protein.seq = seq_enp.item1(protein.iEnp1, 1);
-	flt4 *raw_struct = ca_enp.itemf(protein.iEnp1);
-	protein.raw_struct = raw_struct;
-	protein.ca = arrayToXYZ(raw_struct, protein.nSe);
-	proteins_data[i] = protein;	
+		protein_data protein;
+		char ent[] = "USR1:";
+		char *com;
+		setText(&com, ent);
+		com[4] = '\0';
+		protein.iCom = id_com.find(com);
+		protein.iEnp1 = *i_enp_com.item4(protein.iCom);
+		protein.iEnp2 = *i_enp_com.item4(protein.iCom + 1);
+		if (protein.iEnp1 == -1 || protein.iEnp2 == -1) {
+			printf("Chain %s not found\n", filenames[i]);
+			continue;
+		}
+		//
+		char *name;
+		setText(&name, filenames[i]);
+		char col_cmd[] = ":";
+		addText(&name, col_cmd);
+		addText(&name, name_enp.item1(protein.iEnp1) + 5);
+		//
+		protein.name = name;
+		protein.ent = ent;
+		protein.nSe = *nse_enp.item2(protein.iEnp1);
+		//protein.se = se_enc.item2(*i_enc_enp.item4(protein.iEnp1), 1);
+		protein.seq = seq_enp.item1(protein.iEnp1, 1);
+		flt4 *raw_struct = ca_enp.itemf(protein.iEnp1);
+		protein.raw_struct = raw_struct;
+		protein.ca = arrayToXYZ(raw_struct, protein.nSe);
+		proteins_data[i] = protein;
 	}
 }
 ////////////////////////////////////////////////////////////////////
@@ -515,7 +611,7 @@ void read_params(char *db_tmp_path, char *pdb_dir_name, char **argv) {
 void ce_load_data(CE *ce, char *db_tmp_path, char *pdb_dir_name, int file_count,
 		char **filenames, protein_data *proteins_data) {
 	// load data
-	// ce->fill_dataset_details(pdb_dir_name, filenames);
+	ce->fill_dataset_details(pdb_dir_name, filenames);
 	ce->parse_dataset_files_make_entries(pdb_dir_name, filenames, file_count,
 			db_tmp_path, proteins_data);
 }
@@ -535,7 +631,6 @@ void tmalign_load_data(int line_count, char **filenames, char *dir_name) {
 	// read files
 	char str[256];
 	for (i = 0; i < line_count; i++) {
-		//printf("%s\n",filenames[i]);
 		strcpy(str, dir_name);
 		strcat(str, filenames[i]);
 		seq_length[i] = tmalign_read_pdb_structure(str,
@@ -619,50 +714,5 @@ int tmalign_read_pdb_structure(char *fname, float *prot_backbone, char *ss,
 	fclose(file);
 
 	return --index;
-}
-////////
-int get_file_count2(char *dom_files) {
-	FILE *file = fopen(dom_files, "r");
-	int i;
-	fscanf (file, "%d", &i);
-	fclose(file);
-	return i;
-}
-void fill_filenames(int file_count1, char **filenames1, char *dom_files) {
-	FILE *file = fopen(dom_files, "r");
-	size_t len = 0;
-	ssize_t read;
-	char * line = NULL;
-	int lcount = 0;
-	while ((read = getline(&line, &len, file)) != -1) {
-            line[read - 1] = '\0';
-			--read;
-			if (lcount++ == 0) continue;
-			char *domname;
-			setText(&domname, line);
-			filenames1[lcount - 2] = domname;
-	}
-	fclose(file);
-}
-int get_job_count(char *pair_indices) {
-	FILE *file = fopen(pair_indices, "r");
-	int i;
-	fscanf (file, "%d", &i);
-	fclose(file);
-	return i;
-}
-void load_job_pairs(int job_pairs[][2], char *pair_indices) {
-	FILE *file = fopen(pair_indices, "r");
-	int i, count, n1, n2;
-	char line[80];
-	fgets(line, 80, file);
-	sscanf(line, "%d", &count);
-	for(i = 0; i < count; i++) {
-		fgets(line, 80, file);
-		sscanf(line, "%d %d", &n1, &n2);
-		job_pairs[i][0] = n1;
-		job_pairs[i][1] = n2;
-	}
-	fclose(file);
 }
 ////////

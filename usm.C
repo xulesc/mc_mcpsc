@@ -22,7 +22,7 @@ inline int compressIt(std::vector<T> s){
 }
 
 void USM::load_data(int file_count, char *pdb_dir, char **filenames) {
-	cout << "loading data for USM: " << endl;
+	cout << "loading data for USM" << endl;
 	int i;
 	for(i = 0; i < file_count; i++) {
 		string filepath = std::string(pdb_dir) + std::string(filenames[i]);
@@ -40,29 +40,6 @@ int iComp(string name, std::set<std::string> lines) {
 		if(name.find(line) == 0)
 			return 1;
 	return 0;
-}
-
-void USM::calculate_pairwise_distance(int job_count, int job_pairs[][2],
-	char **filenames) {
-	int i;
-	for(i = 0; i < job_count; i++)
-		calculate_pairwise_distance(filenames[job_pairs[i][0]], 
-			filenames[job_pairs[i][1]]);
-}
-
-void USM::calculate_pairwise_distance(char *row, char *col) {
-    struct timeb t1, t2;	
-	int x = complexity_map[row], y = complexity_map[col];
-	std::vector<std::string> vector1 = data_map[row];
-	std::vector<std::string> vector2 = data_map[col];
-	ftime(&t1);
-    double d = calculate_pairwise_distances(x, y, vector1, vector2);
-    ftime(&t2);
-    cout << "Algo: 3, Protein1: " << row << ", Protein2: " << col 
-         << ", len1: " << vector1.size() << ", len2: " << vector2.size() << ", USM: " << d << ", TM1: -1, TM2: -1" 
-         << ", id: -1, sec_job_start: "<< t1.time << ", sec_result_send: " << t2.time << ", processing_time_msec: "
-         << ( (1000 * t2.time + t2.millitm) - (1000 * t1.time + t1.millitm) )
-         << ", data_collect_time_msec: -1, idle_time_msec: -1" << endl;
 }
 
 void USM::calculate_pairwise_distances(std::set<std::string> lines) {

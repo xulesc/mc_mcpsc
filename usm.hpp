@@ -28,9 +28,6 @@ public:
   void calculate_pairwise_distances(std::set<std::string> lines);
   double calculate_pairwise_distances(int &x, int &y, std::vector< std::string > &vector1, std::vector< std::string > &vector2);  
   double compute_distance(int x, int y, int xy, int yx);
-  void calculate_pairwise_distance(int job_count, int job_pairs[][2],
-	char **filenames);
-  void calculate_pairwise_distance(char *row, char *col);
   
 private:
   boost::unordered_map< std::string, std::vector<std::string> > data_map;
